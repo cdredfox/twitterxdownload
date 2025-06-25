@@ -1,27 +1,108 @@
-import { Card, CardFooter, CardHeader, Button, Avatar, Skeleton,ScrollShadow } from "@heroui/react";
+'use client';
+import { Card, CardFooter, CardHeader, Button, Avatar, Skeleton, ScrollShadow, Spinner } from "@heroui/react";
 import { getTranslation } from "@/lib/i18n";
 import Link from 'next/link';
-import { headers } from 'next/headers'
+import { useState, useEffect } from 'react';
 
-export default async function HotCreators({ locale = 'en' }) {
+export default function HotCreators({ locale = 'en' }) {
+    const [creators, setCreators] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const t = function (key) {
         return getTranslation(locale, key);
     }
-    
-    const headersList = await headers()
-    const host = headersList.get('host')
-    const protocol = headersList.get('x-forwarded-proto') || 'http'
-    const baseUrl = `${protocol}://${host}`
-    const creatorsResp = await fetch(`${baseUrl}/api/requestdb?action=creators`,{
-        cache: 'no-store'
-    });
-    const creatorsData = await creatorsResp.json();
-    const creators = creatorsData.data;
+
+    useEffect(() => {
+        async function fetchCreators() {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/requestdb?action=creators');
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch creators');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 确保 data.data 存在且是数组
+                    if (data.data && Array.isArray(data.data)) {
+                        setCreators(data.data);
+                    } else {
+                        setCreators([]);
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to load creators');
+                }
+            } catch (err) {
+                console.error('Error fetching creators:', err);
+                setError(err.message);
+
+                // 使用示例数据作为后备
+                const sampleCreators = [
+                    {
+                        name: "Example Creator 1",
+                        screen_name: "creator1",
+                        profile_image: "/images/default-avatar.png",
+                        tweet_count: 150
+                    },
+                    {
+                        name: "Example Creator 2",
+                        screen_name: "creator2",
+                        profile_image: "/images/default-avatar.png",
+                        tweet_count: 120
+                    },
+                    {
+                        name: "Example Creator 3",
+                        screen_name: "creator3",
+                        profile_image: "/images/default-avatar.png",
+                        tweet_count: 98
+                    }
+                ];
+
+                setCreators(sampleCreators);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchCreators();
+    }, []);
+
+    if (loading) {
+        return (
+            <>
+                <ScrollShadow className="w-full flex gap-5" orientation="horizontal">
+                    {[1, 2, 3, 4, 5].map((index) => (
+                        <Card
+                            shadow="none"
+                            className="min-w-[160px] max-w-[20%] p-2 flex-shrink-0"
+                            radius="lg"
+                            key={index}
+                        >
+                            <CardHeader className="justify-between gap-5">
+                                <Skeleton className="w-12 h-12 rounded-full" />
+                                <div className="flex flex-col gap-1 items-start justify-center overflow-hidden flex-1">
+                                    <Skeleton className="w-full h-4 rounded" />
+                                    <Skeleton className="w-3/4 h-3 rounded" />
+                                </div>
+                            </CardHeader>
+                            <CardFooter className="justify-between">
+                                <Skeleton className="w-[100px] h-8 rounded-full" />
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </ScrollShadow>
+            </>
+        );
+    }
 
     return (
         <>
             <ScrollShadow className="w-full flex gap-5" orientation="horizontal">
-                {creators.map((creator) => (
+                {Array.isArray(creators) && creators.map((creator) => (
+                    creator && creator.screen_name ? (
                     <Card
                         shadow="none"
                         disableRipple
@@ -50,12 +131,13 @@ export default async function HotCreators({ locale = 'en' }) {
                                     radius="full"
                                     size="sm"
                                     as={Link}
-                                    href={`/tweets?screen_name=${creator.screen_name}`}
+                                    href={`/${locale}/tweets?screen_name=${creator.screen_name}`}
                                 >
                                     {t('Search')}
                                 </Button>
                         </CardFooter>
                     </Card>
+                    ) : null
                 ))}
             </ScrollShadow>
         </>

@@ -2,12 +2,12 @@
 import { Input, Select, SelectItem, Button,Spinner } from "@heroui/react";
 import { RiSearchLine } from "@remixicon/react";
 import { getTranslation } from "@/lib/i18n";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import TweetCard from "@/app/components/ui/TweetCard";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
-export default function Tweets({ params: { locale } }) {
+function TweetsContent({ locale }) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialParams = {
@@ -40,8 +40,16 @@ export default function Tweets({ params: { locale } }) {
     const [loading, setLoading] = useState(false);
     const [tweets, setTweets] = useState([[], [], []]);
 
-    const [shouldSearch, setShouldSearch] = useState(name || screen_name || text);
+    const [shouldSearch, setShouldSearch] = useState(false);
 
+    // 初始搜索 - 只在组件挂载时执行一次
+    useEffect(() => {
+        if (initialParams.name || initialParams.screen_name || initialParams.text) {
+            handleSearch();
+        }
+    }, []); // 空依赖数组，只执行一次
+
+    // 处理 shouldSearch 状态
     useEffect(() => {
         if (shouldSearch) {
             handleSearch();
@@ -50,27 +58,54 @@ export default function Tweets({ params: { locale } }) {
     }, [shouldSearch]);
 
     const handleSearch = async () => {
-
         if(!name.trim() && !screen_name.trim() && !text.trim()){
             return;
         }
 
         setLoading(true);
 
-        router.replace(`/tweets?name=${name}&screen_name=${screen_name}&text=${text}`);
+        try {
+            // 更新 URL
+            router.replace(`/${locale}/tweets?name=${encodeURIComponent(name)}&screen_name=${encodeURIComponent(screen_name)}&text=${encodeURIComponent(text)}`);
 
-        const response = await fetch(`/api/requestdb?action=search&name=${name}&screen_name=${screen_name}&text=${text}&content_type=${content_type}&date_range=${date_range}`);
-        const data = await response.json();
-        
-        const newTweets = [[], [], []];
-        data.data.forEach((tweet, index) => {
-            newTweets[index % 3].push({
-                ...tweet,
-                tweet_media: tweet.tweet_media ? tweet.tweet_media.split(',') : []
+            // 构建搜索参数
+            const searchParams = new URLSearchParams({
+                name: name.trim(),
+                screen_name: screen_name.trim(),
+                text: text.trim(),
+                content_type: content_type,
+                date_range: date_range
             });
-        });
-        setTweets(newTweets);
-        setLoading(false);
+
+            const response = await fetch(`/api/search?${searchParams.toString()}`);
+
+            if (!response.ok) {
+                throw new Error('Search request failed');
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.data && Array.isArray(data.data)) {
+                const newTweets = [[], [], []];
+                data.data.forEach((tweet, index) => {
+                    if (tweet && tweet.tweet_id) {
+                        newTweets[index % 3].push({
+                            ...tweet,
+                            tweet_media: tweet.tweet_media ? tweet.tweet_media.split(',') : []
+                        });
+                    }
+                });
+                setTweets(newTweets);
+            } else {
+                console.error('Invalid search response:', data);
+                setTweets([[], [], []]);
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            setTweets([[], [], []]);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleClear = () => {
@@ -173,11 +208,13 @@ export default function Tweets({ params: { locale } }) {
                                 disabled={loading}
                                 label={t('Content Type')}
                                 variant="underlined"
-                                defaultSelectedKeys={["all"]}
-                                value={content_type}
-                                onChange={(e) => {
-                                    setContentType(e.target.value);
-                                    setShouldSearch(true);
+                                selectedKeys={[content_type]}
+                                onSelectionChange={(keys) => {
+                                    const newValue = Array.from(keys)[0];
+                                    if (newValue !== content_type) {
+                                        setContentType(newValue);
+                                        setShouldSearch(true);
+                                    }
                                 }}
                             >
                                 {contentTypes.map((type) => (
@@ -194,11 +231,13 @@ export default function Tweets({ params: { locale } }) {
                                 disabled={loading}
                                 label={t('Date Range')}
                                 variant="underlined"
-                                defaultSelectedKeys={["all"]}
-                                value={date_range}
-                                onChange={(e) => {
-                                    setDateRange(e.target.value);
-                                    setShouldSearch(true);
+                                selectedKeys={[date_range]}
+                                onSelectionChange={(keys) => {
+                                    const newValue = Array.from(keys)[0];
+                                    if (newValue !== date_range) {
+                                        setDateRange(newValue);
+                                        setShouldSearch(true);
+                                    }
                                 }}
                             >
                                 {dateRanges.map((range) => (
@@ -214,8 +253,10 @@ export default function Tweets({ params: { locale } }) {
                     <div className="flex justify-between gap-5 mt-8 flex-wrap md:flex-nowrap">
                         {tweets.map((row, index) => (
                             <div key={index} className="w-full md:w-1/3 flex flex-col gap-5">
-                                {row.map((tweet) => (
-                                    <TweetCard locale={locale} key={tweet.tweet_id} tweet={tweet} />
+                                {Array.isArray(row) && row.map((tweet) => (
+                                    tweet && tweet.tweet_id ? (
+                                        <TweetCard locale={locale} key={tweet.tweet_id} tweet={tweet} />
+                                    ) : null
                                 ))}
                             </div>
                         ))}
@@ -228,5 +269,13 @@ export default function Tweets({ params: { locale } }) {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function Tweets({ params: { locale } }) {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TweetsContent locale={locale} />
+        </Suspense>
     );
 }

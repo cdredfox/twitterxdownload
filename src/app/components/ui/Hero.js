@@ -3,14 +3,16 @@ import { getTranslation } from '@/lib/i18n';
 import { Button, addToast, ToastProvider } from '@heroui/react';
 import { RiDownloadLine } from '@remixicon/react';
 import { useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import ApiStatus from './ApiStatus';
 
-export default function Hero({ locale = 'en', 
-    downloadButtonLabel = 'Download', 
+export default function Hero({ locale = 'en',
+    downloadButtonLabel = 'Download',
     downloadButtonIsLoading = false,
-    remainApiCount = 0,
-    onDownload = (url) => {}, 
-    url = ''
+    url = '',
+    onDownload = null
 }) {
+    const router = useRouter();
     const t = function (key) {
         return getTranslation(locale, key);
     }
@@ -77,7 +79,12 @@ export default function Hero({ locale = 'en',
                                 return;
                             }
 
-                            onDownload(text);
+                            // 如果有 onDownload 回调，直接调用；否则跳转到 downloader 页面
+                            if (onDownload) {
+                                onDownload(text);
+                            } else {
+                                router.push(`/${locale}/downloader?url=${encodeURIComponent(text)}`);
+                            }
                         }}
                         isLoading={downloadButtonIsLoading}
                         spinnerPlacement="end"
@@ -85,9 +92,13 @@ export default function Hero({ locale = 'en',
                         color="primary" className="text-lg py-6 px-20 rounded-full mb-3" >
                         {t(downloadButtonLabel)}
                     </Button>
-                    <p className="text-gray-500 text-sm">
-                        {t('API Status: ')} {remainApiCount}
+                    <p className="text-gray-500 text-sm mb-4">
+                        {t('Free and No Registration Required')}
                     </p>
+                    {/* API Status 居中显示 */}
+                    <div className="flex justify-center">
+                        <ApiStatus locale={locale} />
+                    </div>
                 </div>
             </div>
         </>

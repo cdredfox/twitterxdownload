@@ -5,8 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cloudflare": "./build-cloudflare.sh",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cf:dev": "wrangler pages dev out --compatibility-date=2024-06-24",
+    "cf:deploy": "wrangler pages deploy out",
+    "cf:db:create": "wrangler d1 create twitterxdownload",
+    "cf:db:migrate": "wrangler d1 execute twitterxdownload --file=./schema.sql"
   },
   "dependencies": {
     "@heroui/react": "^2.7.9",
@@ -24,6 +29,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.4",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "wrangler": "^3.0.0"
   }
 }

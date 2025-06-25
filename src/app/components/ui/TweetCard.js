@@ -7,12 +7,13 @@ import ConfirmModal from "./ConfirmModal";
 import Link from "next/link";
 
 export default function TweetCard({ tweet,enableEdit = false,locale='en', className,onDeleteTweet,onInsertTweet,onAddMedia,onDeleteMedia,onUpdateText }) {
-    
+
     const t = function (key) {
         return getTranslation(locale, key);
     }
 
-    const [textLength, setTextLength] = useState(tweet.tweet_text.length);
+    // 安全地获取文本长度，防止 null 或 undefined 错误
+    const [textLength, setTextLength] = useState((tweet?.tweet_text || '').length);
 
     const getMediaDom = (mediaUrl) => {
         if (mediaUrl.includes('.mp4') || mediaUrl.startsWith('data:video/mp4')) {
@@ -126,10 +127,10 @@ export default function TweetCard({ tweet,enableEdit = false,locale='en', classN
                     src={tweet.profile_image}
                 />
                 <div className="flex-1 flex flex-col pt-1 items-start text-left overflow-hidden">
-                    <h4 className="w-full text-small font-semibold leading-none text-default-600 overflow-hidden text-ellipsis whitespace-nowrap">{tweet.name}</h4>
-                    <h5 className="w-full text-small tracking-tight text-default-400 overflow-hidden text-ellipsis whitespace-nowrap">@{tweet.screen_name}</h5>
+                    <h4 className="w-full text-small font-semibold leading-none text-default-600 overflow-hidden text-ellipsis whitespace-nowrap">{tweet?.name || 'Unknown User'}</h4>
+                    <h5 className="w-full text-small tracking-tight text-default-400 overflow-hidden text-ellipsis whitespace-nowrap">@{tweet?.screen_name || 'unknown'}</h5>
                 </div>
-                {tweet.tweet_threadscount > 0 && <div>
+                {(tweet?.tweet_threadscount || 0) > 0 && <div>
                         <Chip color="default" variant="flat" size="sm" className="flex items-center gap-1 pl-2" endContent={<RiArrowDropDownLine />}>{tweet.tweet_threadscount}</Chip>
                     </div>}
             </CardHeader>
@@ -146,10 +147,10 @@ export default function TweetCard({ tweet,enableEdit = false,locale='en', classN
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
                 }}
-                suppressContentEditableWarning={true}>{tweet.tweet_text}</pre>
+                suppressContentEditableWarning={true}>{tweet?.tweet_text || ''}</pre>
                 {enableEdit && <div className='text-small text-default-400 text-right'>{textLength} / 280</div>}
                 {/* 图片显示逻辑 */}
-                {tweet.tweet_media && tweet.tweet_media.length > 0 && (
+                {tweet?.tweet_media && Array.isArray(tweet.tweet_media) && tweet.tweet_media.length > 0 && (
                     <div className="mt-3">
                         {tweet.tweet_media.length === 1 && (
                             <div className="w-full h-48 relative">

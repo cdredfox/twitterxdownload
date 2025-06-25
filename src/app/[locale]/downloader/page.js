@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getTranslation, locales } from '@/lib/i18n';
 import Hero from '@/app/components/ui/Hero';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Link,Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,Button, Drawer, DrawerContent, DrawerBody, DrawerHeader, useDisclosure } from '@heroui/react';
 import RePublishPanel from '@/app/components/ui/RePublishPanel';
 import { RiArrowDropDownLine } from "@remixicon/react";
@@ -11,13 +11,13 @@ import TweetCard from '@/app/components/ui/TweetCard';
 import { translate } from '@/lib/translator';
 import ConfirmModal from '@/app/components/ui/ConfirmModal';
 
-export default function Downloader({ params: { locale } }) {
+function DownloaderContent({ locale }) {
     const searchParams = useSearchParams();
     const url = searchParams.get('url');
 
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [remainApiCount, setRemainApiCount] = useState(0);
+
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
     const [tweetData, setTweetData] = useState(null);
@@ -33,14 +33,10 @@ export default function Downloader({ params: { locale } }) {
             setIsLoading(true);
             fetchTweet(url);
         }
-        fetchRemainApiCount();
+
     }, []);
 
-    const fetchRemainApiCount = async () => {
-        const response = await fetch('/api/remains');
-        const data = await response.json();
-        setRemainApiCount(data.data);
-    }
+
 
     let retryTimes = 0;
     const fetchTweet = async (url) => {
@@ -84,9 +80,9 @@ export default function Downloader({ params: { locale } }) {
         setTweets(tempTweets);
         console.log(tempTweets);
 
-        fetchRemainApiCount();
 
-        router.replace(`/downloader?url=${url}`);
+
+        router.replace(`/${locale}/downloader?url=${encodeURIComponent(url)}`);
     }
 
     const translateTweet = async (targetLang) => {
@@ -197,7 +193,6 @@ export default function Downloader({ params: { locale } }) {
                         locale={locale}
                         downloadButtonLabel="Fetch"
                         downloadButtonIsLoading={isLoading}
-                        remainApiCount={remainApiCount}
                         url={url}
                         onDownload={(url) => {
                             setIsLoading(true);
@@ -213,7 +208,7 @@ export default function Downloader({ params: { locale } }) {
                         <div className="w-1/3 md:block hidden box-border border-foreground/10 border-[1px] rounded-2xl p-8 bg-[#f8f8f8] dark:bg-foreground/5">
                             <div className="text-medium font-semibold flex items-center">
                                 <div className="flex-1">{t('Parse Result')}</div>
-                                <Button href={`/tweets/${originTweets[0].id_str}`} target="_blank" as={Link} color="primary" size="sm" radius="full">
+                                <Button href={`/${locale}/tweets/${originTweets[0].id_str}`} target="_blank" as={Link} color="primary" size="sm" radius="full">
                                     {t('Goto Article')}
                                 </Button>
                             </div>
@@ -266,4 +261,12 @@ export default function Downloader({ params: { locale } }) {
             </div>
         </div>
     )
+}
+
+export default function Downloader({ params: { locale } }) {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <DownloaderContent locale={locale} />
+        </Suspense>
+    );
 }

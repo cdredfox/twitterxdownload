@@ -17,7 +17,12 @@ export default function Explore({locale = 'en'}) {
         })
         .then(response => response.json())
         .then(data => {
-            setTweets(data.data);
+            // 确保 data.data 存在且是数组
+            if (data && data.data && Array.isArray(data.data)) {
+                setTweets(data.data);
+            } else {
+                setTweets([]);
+            }
         })
         .catch(error => {
             console.error('Error fetching tweets:', error);

@@ -1,0 +1,51 @@
+# Cloudflare Pages Headers 配置
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# 静态资源缓存
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 图片资源缓存
+/images/*
+  Cache-Control: public, max-age=86400
+
+# API 路由不缓存
+/api/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# 字体文件缓存
+*.woff
+  Cache-Control: public, max-age=31536000, immutable
+*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+# 国际化路由
+/en/*
+  Content-Language: en
+/zh-CN/*
+  Content-Language: zh-CN
+/zh-HK/*
+  Content-Language: zh-HK
+/ja/*
+  Content-Language: ja
+/ko/*
+  Content-Language: ko
+/es/*
+  Content-Language: es
+/pt/*
+  Content-Language: pt
+/it/*
+  Content-Language: it
+/fr/*
+  Content-Language: fr
+/de/*
+  Content-Language: de
+/th/*
+  Content-Language: th
+/tr/*
+  Content-Language: tr

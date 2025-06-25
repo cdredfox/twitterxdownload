@@ -1,0 +1,21 @@
+# Cloudflare Pages 重定向配置
+
+# 静态资源直接提供
+/_next/* /_next/:splat 200
+/images/* /images/:splat 200
+/favicon.ico /favicon.ico 200
+/ads.txt /ads.txt 200
+/robots.txt /robots.txt 200
+
+# API 路由到 Functions
+/api/* /api/:splat 200
+
+# 根路径重定向到英文版本
+/ /en/ 302
+
+# 旧路径重定向到新的国际化路径
+/downloader /en/downloader/ 301
+/about-us /en/about-us/ 301
+/privacy-policy /en/privacy-policy/ 301
+/terms-of-service /en/terms-of-service/ 301
+/tweets /en/tweets/ 301

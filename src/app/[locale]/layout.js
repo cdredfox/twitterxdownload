@@ -9,6 +9,18 @@ import {Providers} from "../providers";
 import MyNavbar from '../components/ui/MyNavbar';
 import MyFooter from '../components/ui/MyFooter';
 
+// 生成静态参数以支持静态导出
+export async function generateStaticParams() {
+  const locales = [
+    'en', 'zh-CN', 'zh-HK', 'ja', 'ko',
+    'es', 'pt', 'it', 'fr', 'de', 'th', 'tr'
+  ];
+
+  return locales.map((locale) => ({
+    locale: locale,
+  }));
+}
+
 
 export const metadata = {
   title: {
